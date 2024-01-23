@@ -8,11 +8,14 @@ import DetailModal from "./DetailModal";
 import Container from "@mui/material/Container";
 import Chip from "@mui/material/Chip";
 import NubePalabras from "./NubePalabras";
+import CircularProgress from "@mui/material/CircularProgress";
+import Box from "@mui/material/Box";
 
 function Tabla() {
   const [licit, setLicit] = useState([]);
   const [details, setDetails] = useState(null);
   const [open, setOpen] = React.useState(false);
+  const [loading, setLoading] = useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
 
@@ -21,10 +24,13 @@ function Tabla() {
 
   const getData = async () => {
     try {
+      setLoading(true); // Mostrar indicador de progreso
       const response = await axios.get(endpoint);
       setLicit(response.data.Listado);
     } catch (error) {
       console.error("Error al obtener datos de la API:", error);
+    } finally {
+      setLoading(false); // Ocultar indicador de progreso independientemente del resultado
     }
   };
 
@@ -120,6 +126,8 @@ function Tabla() {
   const handleButtonClick = async (rowData) => {
     const { CodigoExterno } = rowData;
 
+    setLoading(true); // Mostrar progreso
+
     // Construir la URL de la API con el CodigoExterno
     const apiURL = `${endpoint}&codigo=${encodeURIComponent(
       CodigoExterno
@@ -133,6 +141,9 @@ function Tabla() {
     } catch (error) {
       // Manejar errores
       console.error("Error al obtener datos de la API:", error);
+    } finally {
+      // Ocultar CircularProgress al finalizar la carga (independientemente del resultado)
+      setLoading(false);
     }
   };
 
@@ -179,6 +190,18 @@ function Tabla() {
   return (
     <Container fixed>
       <NubePalabras topWords={topWords} /> {/* Renderiza la nube de palabras */}
+      {loading && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      )}
       <MUIDataTable
         title={"Tabla Licitaciones"}
         data={licit}
