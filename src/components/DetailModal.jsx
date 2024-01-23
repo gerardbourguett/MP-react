@@ -8,6 +8,10 @@ import TableBody from "@mui/material/TableBody";
 import TableRow from "@mui/material/TableRow";
 import TableCell from "@mui/material/TableCell";
 import ItemCard from "./ItemCard";
+import Button from "@mui/material/Button";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
+import Grid from "@mui/material/Grid";
 
 const DetailModal = ({ open, handleClose, rowData, details, formatFecha }) => {
   const style = {
@@ -15,13 +19,39 @@ const DetailModal = ({ open, handleClose, rowData, details, formatFecha }) => {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: 800,
+    width: 700,
     height: "100%",
     bgcolor: "background.paper",
     border: "2px solid #000",
     boxShadow: 24,
     p: 4,
     overflow: "scroll",
+    flexGrow: 1,
+  };
+
+  const handleCopyToClipboard = () => {
+    const text = rowData.CodigoExterno;
+
+    // Intentar copiar al portapapeles
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        // Mostrar la notificación de éxito
+        handleSnackbarOpen();
+      })
+      .catch((err) => {
+        // Manejar errores, por ejemplo, mostrando un mensaje de error
+        console.error("Error al copiar al portapapeles:", err);
+      });
+  };
+
+  const [openSnackbar, setOpenSnackbar] = React.useState(false);
+  const handleSnackbarOpen = () => {
+    setOpenSnackbar(true);
+  };
+
+  const handleSnackbarClose = () => {
+    setOpenSnackbar(false);
   };
 
   return (
@@ -32,9 +62,32 @@ const DetailModal = ({ open, handleClose, rowData, details, formatFecha }) => {
       aria-describedby="modal-modal-description"
     >
       <Box sx={style}>
-        <Typography id="modal-modal-title" variant="h4" component="h2">
-          Código de Licitación: {rowData.CodigoExterno}
-        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={9}>
+            <Typography id="modal-modal-title" variant="h6" component="h2">
+              Código de Licitación: {rowData.CodigoExterno}
+            </Typography>
+          </Grid>
+          <Grid item xs={3}>
+            <Button onClick={handleCopyToClipboard}>Copiar Código</Button>
+
+            <Snackbar
+              open={openSnackbar}
+              autoHideDuration={2000}
+              onClose={handleSnackbarClose}
+            >
+              <MuiAlert
+                elevation={6}
+                variant="filled"
+                onClose={handleSnackbarClose}
+                severity="success"
+              >
+                Código copiado al portapapeles
+              </MuiAlert>
+            </Snackbar>
+          </Grid>
+        </Grid>
+
         <hr />
 
         {details && (

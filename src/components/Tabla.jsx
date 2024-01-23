@@ -5,6 +5,8 @@ import { format } from "date-fns";
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import DetailModal from "./DetailModal";
+import Container from "@mui/material/Container";
+import Chip from "@mui/material/Chip";
 
 function Tabla() {
   const [licit, setLicit] = useState([]);
@@ -17,19 +19,83 @@ function Tabla() {
     "https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json?ticket=54296D76-CAFF-4964-886F-35E9223D30B4&estado=activas";
 
   const getData = async () => {
-    await axios.get(endpoint).then((response) => {
-      const data = response.data;
-      setLicit(data.Listado);
-    });
+    try {
+      const response = await axios.get(endpoint);
+      setLicit(response.data.Listado);
+    } catch (error) {
+      console.error("Error al obtener datos de la API:", error);
+    }
   };
 
   useEffect(() => {
     getData();
   }, []);
 
+  // Lista de palabras comunes a excluir (stopwords)
+  const stopwords = [
+    "de",
+    "y",
+    "para",
+    "la",
+    "el",
+    "en",
+    "con",
+    "al",
+    "-",
+    "año",
+    "2024",
+    "del",
+    "a",
+    "e",
+    "i",
+    "o",
+    "u",
+    "san",
+    "los",
+    "",
+    " ",
+  ];
+
+  // Paso 1: Obtener los Nombres
+  const nombres = licit.flatMap((item) => item.Nombre.split(/\s+/));
+
+  // Paso 2: Filtrar stopwords
+  const palabras = nombres
+    .filter((palabra) => !stopwords.includes(palabra.toLowerCase()))
+    .map((palabra) => palabra.toLowerCase());
+
+  // Paso 3: Contar la Frecuencia de cada palabra
+  const frequencyMap = palabras.reduce((acc, palabra) => {
+    acc[palabra] = (acc[palabra] || 0) + 1;
+    return acc;
+  }, {});
+
+  // Paso 4: Obtener las 20 palabras más usadas
+  const topWords = Object.entries(frequencyMap)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 20);
+
+  const formatFechaTabla = (dateString) => {
+    return format(new Date(dateString), "dd-MM-yyyy");
+  };
+
   const formatFecha = (dateString) => {
     return format(new Date(dateString), "dd-MM-yyyy HH:mm");
   };
+
+  // Renderizar la nube de etiquetas con las 20 palabras más usadas
+  const tagCloud = topWords.map(([palabra, frecuencia]) => (
+    <Chip
+      key={palabra}
+      label={`${palabra} (${frecuencia})`}
+      size="small"
+      style={{
+        margin: "4px",
+        borderRadius: "5px",
+        backgroundColor: "#f0f0f0",
+      }}
+    />
+  ));
 
   const renderButton = (rowData) => {
     return (
@@ -62,7 +128,6 @@ function Tabla() {
       const response = await axios.get(apiURL);
       // Actualizar el estado 'details'
       setDetails(response.data.Listado[0]);
-      console.log(response.data.Listado[0]);
       handleOpen(); // Abre el modal después de obtener los datos
     } catch (error) {
       // Manejar errores
@@ -83,7 +148,7 @@ function Tabla() {
       name: "FechaCierre",
       label: "Fecha Cierre",
       options: {
-        customBodyRender: (value) => formatFecha(value),
+        customBodyRender: (value) => formatFechaTabla(value),
       },
     },
     {
@@ -111,14 +176,16 @@ function Tabla() {
   };
 
   return (
-    <div className="container">
+    <Container fixed>
+      <Typography variant="h5">Top palabras</Typography>
+      {tagCloud}
       <MUIDataTable
         title={"Tabla Licitaciones"}
         data={licit}
         columns={columns}
         options={options}
       />
-    </div>
+    </Container>
   );
 }
 
