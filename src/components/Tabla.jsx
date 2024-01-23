@@ -7,6 +7,7 @@ import Typography from "@mui/material/Typography";
 import DetailModal from "./DetailModal";
 import Container from "@mui/material/Container";
 import Chip from "@mui/material/Chip";
+import NubePalabras from "./NubePalabras";
 
 function Tabla() {
   const [licit, setLicit] = useState([]);
@@ -177,8 +178,7 @@ function Tabla() {
 
   return (
     <Container fixed>
-      <Typography variant="h5">Top palabras</Typography>
-      {tagCloud}
+      <NubePalabras topWords={topWords} /> {/* Renderiza la nube de palabras */}
       <MUIDataTable
         title={"Tabla Licitaciones"}
         data={licit}
