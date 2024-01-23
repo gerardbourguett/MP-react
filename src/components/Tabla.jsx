@@ -1,107 +1,122 @@
-import { useState, useEffect } from "react";
-import "./Tabla.css";
-import DataTable from "react-data-table-component";
-import "styled-components";
-import { useMemo } from "react";
-import Button from "react-bootstrap/Button";
-import * as XLSX from "xlsx";
+import React, { useState, useEffect } from "react";
+import MUIDataTable from "mui-datatables";
+import axios from "axios";
+import { format } from "date-fns";
+import Button from "@mui/material/Button";
+import Typography from "@mui/material/Typography";
+import DetailModal from "./DetailModal";
 
 function Tabla() {
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState([]); // Guarda los datos de la tabla en un array
-  const [hasFetchedData, setHasFetchedData] = useState(false);
-  const [loadingExport, setLoadingExport] = useState(false);
+  const [licit, setLicit] = useState([]);
+  const [details, setDetails] = useState(null);
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
 
-  const URL =
+  const endpoint =
     "https://api.mercadopublico.cl/servicios/v1/publico/licitaciones.json?ticket=54296D76-CAFF-4964-886F-35E9223D30B4&estado=activas";
 
-  const showData = async () => {
-    try {
-      if (!hasFetchedData) {
-        setLoading(true);
-
-        const response = await fetch(URL);
-        const responseData = await response.json();
-
-        if (responseData && responseData.Listado) {
-          setData(responseData.Listado);
-          setHasFetchedData(true);
-        } else {
-          console.error(
-            "La propiedad Listado no está presente en la respuesta:",
-            responseData
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setLoading(false);
-    }
+  const getData = async () => {
+    await axios.get(endpoint).then((response) => {
+      const data = response.data;
+      setLicit(data.Listado);
+    });
   };
 
   useEffect(() => {
-    showData().catch((error) => {
-      console.error("Error al obtener datos:", error);
-    });
+    getData();
   }, []);
+
+  const formatFecha = (dateString) => {
+    return format(new Date(dateString), "dd-MM-yyyy HH:mm");
+  };
+
+  const renderButton = (rowData) => {
+    return (
+      <>
+        <Button onClick={() => handleButtonClick(rowData)}>
+          <Typography variant="button" display="block" gutterBottom>
+            Detalles
+          </Typography>
+        </Button>
+        <DetailModal
+          open={open}
+          handleClose={handleClose}
+          rowData={rowData}
+          details={details}
+          formatFecha={formatFecha}
+        />
+      </>
+    );
+  };
+
+  const handleButtonClick = async (rowData) => {
+    const { CodigoExterno } = rowData;
+
+    // Construir la URL de la API con el CodigoExterno
+    const apiURL = `${endpoint}&codigo=${encodeURIComponent(
+      CodigoExterno
+    )}&estado=activas`;
+
+    try {
+      const response = await axios.get(apiURL);
+      // Actualizar el estado 'details'
+      setDetails(response.data.Listado[0]);
+      console.log(response.data.Listado[0]);
+      handleOpen(); // Abre el modal después de obtener los datos
+    } catch (error) {
+      // Manejar errores
+      console.error("Error al obtener datos de la API:", error);
+    }
+  };
 
   const columns = [
     {
       name: "CodigoExterno",
-      selector: (row) => row.CodigoExterno,
-      sortable: true,
+      label: "Codigo Externo",
     },
-    { name: "Nombre", selector: (row) => row.Nombre, sortable: true },
     {
-      name: "Fecha Cierre",
-      selector: (row) => row.FechaCierre,
-      sortable: true,
+      name: "Nombre",
+      label: "Nombre",
+    },
+    {
+      name: "FechaCierre",
+      label: "Fecha Cierre",
+      options: {
+        customBodyRender: (value) => formatFecha(value),
+      },
+    },
+    {
+      name: "",
+      label: "#",
+      options: {
+        customBodyRender: (value, tableMeta) =>
+          renderButton(licit[tableMeta.rowIndex]),
+      },
     },
   ];
 
-  function downloadXLSX(array) {
-    const worksheet = XLSX.utils.json_to_sheet(array);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Licitaciones");
-
-    // Utiliza XLSX.writeFile en lugar de XLSX.write
-    XLSX.writeFile(workbook, "export.xlsx");
-
-    console.log("Archivo XLSX descargado correctamente");
-  }
-
-  const Export = ({ onExport }) => (
-    <Button onClick={() => handleExport(onExport)} disabled={loadingExport}>
-      Exportar
-    </Button>
-  );
-
-  const handleExport = async (onExport) => {
-    setLoadingExport(true);
-    try {
-      await showData(); // Espera a que la solicitud inicial se complete antes de exportar
-      onExport();
-    } catch (error) {
-      console.error("Error al obtener datos:", error);
-    } finally {
-      setLoadingExport(false);
-    }
+  const options = {
+    responsive: "simple",
+    download: true,
+    downloadOptions: {
+      filename: "tableDownload.csv",
+      separator: ",",
+      filterOptions: {
+        useDisplayedRowsOnly: true,
+        useDisplayedColumnsOnly: true,
+      },
+    },
+    selectableRows: "none",
   };
-
-  const actionsMemo = useMemo(
-    () => <Export onExport={() => downloadXLSX(data)} />,
-    [data]
-  );
 
   return (
     <div className="container">
-      <DataTable
-        title="Licitaciones"
+      <MUIDataTable
+        title={"Tabla Licitaciones"}
+        data={licit}
         columns={columns}
-        data={data}
-        pagination
-        actions={actionsMemo}
+        options={options}
       />
     </div>
   );
