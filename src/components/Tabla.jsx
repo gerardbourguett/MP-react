@@ -11,6 +11,9 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Unstable_Grid2";
 import Barras from "./Barras.jsx";
+import Card from "@mui/material/Card";
+import CardActions from "@mui/material/CardActions";
+import CardContent from "@mui/material/CardContent";
 
 function Tabla() {
   const [licit, setLicit] = useState([]);
@@ -28,19 +31,10 @@ function Tabla() {
       setLoading(true);
       const response = await axios.get(endpoint);
 
-      // Filtrar elementos con FechaCierre no nulo y dentro de los próximos 10 días
-      const currentDate = new Date();
-      const tenDaysLater = new Date();
-      tenDaysLater.setDate(currentDate.getDate() + 10);
-
-      const filteredLicit = response.data.Listado.filter((item) => {
-        const fechaCierre = new Date(item.FechaCierre);
-        return (
-          item.FechaCierre !== null &&
-          fechaCierre >= currentDate &&
-          fechaCierre <= tenDaysLater
-        );
-      });
+      // Filtrar elementos con FechaCierre no nulo
+      const filteredLicit = response.data.Listado.filter(
+        (item) => item.FechaCierre !== null
+      );
 
       // Ordenar los elementos filtrados por FechaCierre
       const sortedLicit = filteredLicit.sort(
@@ -200,8 +194,11 @@ function Tabla() {
         <Grid item xs={4}>
           {licit.length > 0 && (
             <>
-              <NubePalabras topWords={topWords} />
-              <Barras licit={licit} />
+              <Box>
+                <NubePalabras topWords={topWords} />
+                <br />
+                <Barras licit={licit} />
+              </Box>
             </>
           )}
         </Grid>

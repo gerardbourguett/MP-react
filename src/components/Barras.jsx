@@ -1,7 +1,10 @@
 /* eslint-disable react/prop-types */
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useRef } from "react";
-import Chart from "chart.js/auto"; // Import the Chart.js library
+import Chart from "chart.js/auto";
+import Typography from "@mui/material/Typography";
+import Container from "@mui/material/Container";
+import { Box, Card, CardActions, CardContent } from "@mui/material";
 
 const Barras = ({ licit }) => {
   const chartRef = useRef(null);
@@ -24,9 +27,21 @@ const Barras = ({ licit }) => {
       return `${dia}-${mes}-${anio}`;
     };
 
+    // Filtrar licitaciones con FechaCierre en los próximos 10 días
+    const currentDate = new Date();
+    const tenDaysLater = new Date();
+    tenDaysLater.setDate(currentDate.getDate() + 7);
+
+    const filteredLicit = licit.filter((item) => {
+      const date = new Date(item.FechaCierre);
+      return (
+        item.FechaCierre !== null && date >= currentDate && date <= tenDaysLater
+      );
+    });
+
     // Count occurrences for each formatted date
     const counts = {};
-    licit.forEach((item) => {
+    filteredLicit.forEach((item) => {
       const date = new Date(item.FechaCierre);
       const formattedDate = formatDate(date);
       counts[formattedDate] = (counts[formattedDate] || 0) + 1;
@@ -67,7 +82,22 @@ const Barras = ({ licit }) => {
     chartRef.current.chart = newChart;
   }, [licit]);
 
-  return <canvas ref={chartRef} width={500} height={300}></canvas>;
+  return (
+    <>
+      <Box>
+        <Card sx={{ minWidth: 275 }}>
+          <CardContent>
+            <Typography variant="h5" component="div" sx={{ mb: 1.5 }}>
+              Cierran en los próximos 7 días
+            </Typography>
+          </CardContent>
+          <CardActions>
+            <canvas ref={chartRef}></canvas>
+          </CardActions>
+        </Card>
+      </Box>
+    </>
+  );
 };
 
 export default Barras;
