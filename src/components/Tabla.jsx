@@ -6,10 +6,11 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import DetailModal from "./DetailModal";
 import Container from "@mui/material/Container";
-import Chip from "@mui/material/Chip";
 import NubePalabras from "./NubePalabras";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
+import Grid from "@mui/material/Unstable_Grid2";
+import Barras from "./Barras.jsx";
 
 function Tabla() {
   const [licit, setLicit] = useState([]);
@@ -24,13 +25,33 @@ function Tabla() {
 
   const getData = async () => {
     try {
-      setLoading(true); // Mostrar indicador de progreso
+      setLoading(true);
       const response = await axios.get(endpoint);
-      setLicit(response.data.Listado);
+
+      // Filtrar elementos con FechaCierre no nulo y dentro de los próximos 10 días
+      const currentDate = new Date();
+      const tenDaysLater = new Date();
+      tenDaysLater.setDate(currentDate.getDate() + 10);
+
+      const filteredLicit = response.data.Listado.filter((item) => {
+        const fechaCierre = new Date(item.FechaCierre);
+        return (
+          item.FechaCierre !== null &&
+          fechaCierre >= currentDate &&
+          fechaCierre <= tenDaysLater
+        );
+      });
+
+      // Ordenar los elementos filtrados por FechaCierre
+      const sortedLicit = filteredLicit.sort(
+        (a, b) => new Date(a.FechaCierre) - new Date(b.FechaCierre)
+      );
+
+      setLicit(sortedLicit);
     } catch (error) {
       console.error("Error al obtener datos de la API:", error);
     } finally {
-      setLoading(false); // Ocultar indicador de progreso independientemente del resultado
+      setLoading(false);
     }
   };
 
@@ -89,20 +110,6 @@ function Tabla() {
   const formatFecha = (dateString) => {
     return format(new Date(dateString), "dd-MM-yyyy HH:mm");
   };
-
-  // Renderizar la nube de etiquetas con las 20 palabras más usadas
-  const tagCloud = topWords.map(([palabra, frecuencia]) => (
-    <Chip
-      key={palabra}
-      label={`${palabra} (${frecuencia})`}
-      size="small"
-      style={{
-        margin: "4px",
-        borderRadius: "5px",
-        backgroundColor: "#f0f0f0",
-      }}
-    />
-  ));
 
   const renderButton = (rowData) => {
     return (
@@ -188,26 +195,37 @@ function Tabla() {
   };
 
   return (
-    <Container fixed>
-      <NubePalabras topWords={topWords} /> {/* Renderiza la nube de palabras */}
-      {loading && (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "100vh",
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      )}
-      <MUIDataTable
-        title={"Tabla Licitaciones"}
-        data={licit}
-        columns={columns}
-        options={options}
-      />
+    <Container maxWidth="xl">
+      <Grid container spacing={2}>
+        <Grid item xs={4}>
+          {licit.length > 0 && (
+            <>
+              <NubePalabras topWords={topWords} />
+              <Barras licit={licit} />
+            </>
+          )}
+        </Grid>
+        <Grid item xs={8}>
+          {loading && (
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: "100vh",
+              }}
+            >
+              <CircularProgress />
+            </Box>
+          )}
+          <MUIDataTable
+            title={"Tabla Licitaciones"}
+            data={licit}
+            columns={columns}
+            options={options}
+          />
+        </Grid>
+      </Grid>
     </Container>
   );
 }
