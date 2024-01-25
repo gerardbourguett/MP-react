@@ -11,9 +11,6 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Unstable_Grid2";
 import Barras from "./Barras.jsx";
-import Card from "@mui/material/Card";
-import CardActions from "@mui/material/CardActions";
-import CardContent from "@mui/material/CardContent";
 
 function Tabla() {
   const [licit, setLicit] = useState([]);
@@ -31,12 +28,10 @@ function Tabla() {
       setLoading(true);
       const response = await axios.get(endpoint);
 
-      // Filtrar elementos con FechaCierre no nulo
       const filteredLicit = response.data.Listado.filter(
         (item) => item.FechaCierre !== null
       );
 
-      // Ordenar los elementos filtrados por FechaCierre
       const sortedLicit = filteredLicit.sort(
         (a, b) => new Date(a.FechaCierre) - new Date(b.FechaCierre)
       );
@@ -53,7 +48,6 @@ function Tabla() {
     getData();
   }, []);
 
-  // Lista de palabras comunes a excluir (stopwords)
   const stopwords = [
     "de",
     "y",
@@ -78,21 +72,17 @@ function Tabla() {
     " ",
   ];
 
-  // Paso 1: Obtener los Nombres
   const nombres = licit.flatMap((item) => item.Nombre.split(/\s+/));
 
-  // Paso 2: Filtrar stopwords
   const palabras = nombres
     .filter((palabra) => !stopwords.includes(palabra.toLowerCase()))
     .map((palabra) => palabra.toLowerCase());
 
-  // Paso 3: Contar la Frecuencia de cada palabra
   const frequencyMap = palabras.reduce((acc, palabra) => {
     acc[palabra] = (acc[palabra] || 0) + 1;
     return acc;
   }, {});
 
-  // Paso 4: Obtener las 20 palabras más usadas
   const topWords = Object.entries(frequencyMap)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 20);
@@ -127,23 +117,19 @@ function Tabla() {
   const handleButtonClick = async (rowData) => {
     const { CodigoExterno } = rowData;
 
-    setLoading(true); // Mostrar progreso
+    setLoading(true);
 
-    // Construir la URL de la API con el CodigoExterno
     const apiURL = `${endpoint}&codigo=${encodeURIComponent(
       CodigoExterno
     )}&estado=activas`;
 
     try {
       const response = await axios.get(apiURL);
-      // Actualizar el estado 'details'
       setDetails(response.data.Listado[0]);
-      handleOpen(); // Abre el modal después de obtener los datos
+      handleOpen();
     } catch (error) {
-      // Manejar errores
       console.error("Error al obtener datos de la API:", error);
     } finally {
-      // Ocultar CircularProgress al finalizar la carga (independientemente del resultado)
       setLoading(false);
     }
   };

@@ -12,14 +12,11 @@ const Barras = ({ licit }) => {
   useEffect(() => {
     const ctx = chartRef.current.getContext("2d");
 
-    // Check if the chart instance already exists
     if (chartRef.current.chart) {
-      // If it exists, destroy the previous chart
       chartRef.current.chart.destroy();
-    }
 
-    // Ordenar las fechas cronológicamente
-    // Función para formatear la fecha a DD-MM-YYYY
+      chartRef.current.height = 700;
+    }
     const formatDate = (date) => {
       const dia = date.getDate().toString().padStart(2, "0");
       const mes = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -27,7 +24,6 @@ const Barras = ({ licit }) => {
       return `${dia}-${mes}-${anio}`;
     };
 
-    // Filtrar licitaciones con FechaCierre en los próximos 10 días
     const currentDate = new Date();
     const tenDaysLater = new Date();
     tenDaysLater.setDate(currentDate.getDate() + 7);
@@ -39,7 +35,6 @@ const Barras = ({ licit }) => {
       );
     });
 
-    // Count occurrences for each formatted date
     const counts = {};
     filteredLicit.forEach((item) => {
       const date = new Date(item.FechaCierre);
@@ -47,38 +42,54 @@ const Barras = ({ licit }) => {
       counts[formattedDate] = (counts[formattedDate] || 0) + 1;
     });
 
-    // Extracting the necessary information for the bar chart
     const barData = {
       labels: Object.keys(counts),
       datasets: [
         {
-          label: "Cantidad",
+          axis: "y",
+          label: "Licitaciones",
           data: Object.values(counts),
-          fill: true,
-          borderColor: "rgb(255, 99, 132)",
-          backgroundColor: "rgba(255, 99, 132, 0.3)",
+          fill: false,
+          borderColor: [
+            "rgb(255, 99, 132)",
+            "rgb(255, 159, 64)",
+            "rgb(255, 205, 86)",
+            "rgb(75, 192, 192)",
+            "rgb(54, 162, 235)",
+            "rgb(153, 102, 255)",
+            "rgb(201, 203, 207)",
+          ],
+          backgroundColor: [
+            "rgba(255, 99, 132, 0.2)",
+            "rgba(255, 159, 64, 0.2)",
+            "rgba(255, 205, 86, 0.2)",
+            "rgba(75, 192, 192, 0.2)",
+            "rgba(54, 162, 235, 0.2)",
+            "rgba(153, 102, 255, 0.2)",
+            "rgba(201, 203, 207, 0.2)",
+          ],
+          borderWidth: 1,
         },
       ],
     };
 
-    // Create the bar chart
     const newChart = new Chart(ctx, {
       type: "bar",
       data: barData,
       options: {
+        indexAxis: "y",
         scales: {
-          x: {
-            type: "category", // Set the x-axis type to "category"
-          },
           y: {
-            type: "linear", // Set the y-axis type to "linear"
+            type: "category",
+          },
+          x: {
+            type: "linear",
             position: "left",
           },
         },
       },
     });
 
-    // Save the chart instance to the ref
     chartRef.current.chart = newChart;
   }, [licit]);
 
